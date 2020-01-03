@@ -23,9 +23,9 @@ from textblob import TextBlob
 import nltk
 nltk.download('punkt')
 nltk.download('averaged_perceptron_tagger')
+from googletrans import Translator
 
-
-
+translator = Translator()
 analyzer = SentimentIntensityAnalyzer()
 
 #consumer key, consumer secret, access token, access secret.
@@ -136,13 +136,22 @@ class listener(StreamListener):
         try:
             data = json.loads(data)
 
+            # print(data)
             if 'truncated' not in data:
                 return True
-                print(data)
+                # print(data)
             if data['truncated']:
                 tweet = unidecode(data['extended_tweet']['full_text'])
             else:
                 tweet = unidecode(data['text'])
+
+            # print(tweet)
+            # if data.lang == 'en':
+            #     return data
+
+            # else:
+            #     data = translatorl.translate(data['text'])
+            
             
             time_ms = data['timestamp_ms']
             vs = analyzer.polarity_scores(tweet)
@@ -213,7 +222,7 @@ while True:
         auth = OAuthHandler(ckey, csecret)
         auth.set_access_token(atoken, asecret)
         twitterStream = Stream(auth, listener(lock))
-        twitterStream.filter(track=["a","e","i","o","u"])
+        twitterStream.filter(languages=['en'], track=["a","e","i","o","u"])
     except Exception as e:
         print(str(e))
         time.sleep(5)

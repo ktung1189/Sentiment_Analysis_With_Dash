@@ -8,7 +8,6 @@ import plotly
 import plotly.graph_objs as go
 import sqlite3
 import pandas as pd 
-
 from collections import Counter
 import string
 import regex as re
@@ -145,13 +144,13 @@ def related_sentiments(df, sentiment_term, how_many=15):
         blacklist_counter_with_term[sentiment_term] = 1000000
         counts = (Counter(tokens) - blacklist_counter_with_term).most_common(15)
 
-        print('here')
+        # print('here')
         for term, count in counts:
             try:
                 df = pd.read_sql("SELECT sentiment.* FROM  sentiment_fts fts LEFT JOIN sentiment ON fts.rowid = sentiment.id WHERE fts.sentiment_fts MATCH ? ORDER BY fts.rowid DESC LIMIT 200", conn, params=(term,))
-                print(df)
+                # print('related_sentiments')
                 related_words[term] = [df['sentiment'].mean(), count]
-                print(related_words[term])
+                # print(related_words[term])
             except Exception as e:
                 with open('errors.txt', 'a') as f:
                     f.write(str(e))
@@ -159,10 +158,10 @@ def related_sentiments(df, sentiment_term, how_many=15):
 
 
         return related_words
-
+        # print('related_words' + related_words)
     
     except Exception as e:
-        with open('errors.txt', 'a') as f:
+        with open('errors_related_sentiments.txt', 'a') as f:
             f.write(str(e))
             f.write('\n')
 
@@ -227,8 +226,8 @@ def pos_neg_neutral(col):
 
 def update_recent_tweets(sentiment_term, n):
     if sentiment_term:
-        df = pd.read_sql('SELECT sentiment.* FROM sentiment_fts fts LEFT JOIN sentiment ON fts.rowid = sentiment.id WHERE fts.sentiment_fts MATCH ? ORDER BY fts.rowid DESC LIMIT 10', conn, params=(sentiment_term + '*',))
-        print(df)
+        df = pd.read_sql('SELECT sentiment.* FROM sentiment_fts fts LEFT JOIN sentiment ON fts.rowid = sentiment.id WHERE fts.sentiment_fts MATCH ? ORDER BY fts.rowid DESC LIMIT 10', conn, params=(sentiment_term+'*',))
+        # print(df)
     else:
         df = pd.read_sql('SELECT * FROM sentiment ORDER BY id DESC, unix DESC LIMIT 10', conn)
 
@@ -253,7 +252,7 @@ def update_pie_chart(sentiment_term, n):
         if sentiment_pie_dict:
             break
         time.sleep(0.1)
-        print(sentiment_pie_dict)
+        # print(sentiment_pie_dict)
     if not sentiment_pie_dict:
         return None
 
@@ -337,8 +336,8 @@ def update_graph_scatter(sentiment_term, n):
             marker = dict(color=app_colors['volume-bar']),
 
             )
-        print(data)
-        print(data2)
+        # print(data)
+        # print(data2)
         return {'data': [data, data2], 'layout': go.Layout(xaxis=dict(range=[min(X), max(X)]),
                                                             yaxis=dict(range=[min(Y2), max(Y2*4)], title='Volume', side='right'),
                                                             yaxis2=dict(range=[min(Y), max(Y)], side='left', overlaying='y', title='sentiment'),
@@ -348,7 +347,7 @@ def update_graph_scatter(sentiment_term, n):
                                                             paper_bgcolor=app_colors['background'],
                                                             showlegend=False)}
     except Exception as e:
-        with open('errors.txt', 'a') as f:
+        with open('errors_graph.txt', 'a') as f:
             f.write(str(e))
             f.write('\n')
 
@@ -362,7 +361,7 @@ def update_graph_scatter(sentiment_term, n):
 def update_hist_graph_scatter(sentiment_term, n):
     try:
         if sentiment_term:
-            df = pd.read_sql('SELECT sentiment.* FROM sentiment_fts fts LEFT JOIN sentiment ON fts.rowid = sentiment.id WHERE fts.sentiment_fts MATCH ? ORDER BY fts.rowid DESC LIMIT 10000', conn, params=(sentiment_term + '*',))
+            df = pd.read_sql('SELECT sentiment.* FROM sentiment_fts fts LEFT JOIN sentiment ON fts.rowid = sentiment.id WHERE fts.sentiment_fts MATCH ? ORDER BY fts.rowid DESC LIMIT 10000', conn, params=(sentiment_term+'*',))
         
         else:
             df = pd.read_sql('SELECT * FROM sentiment ORDER BY id DESC, unix DESC LIMIT 10000', conn)
@@ -373,17 +372,17 @@ def update_hist_graph_scatter(sentiment_term, n):
 
         # store related sentiments in cache
         cache.set('related_terms', sentiment_term, related_sentiments(df, sentiment_term), 120)
-
-        print(related_sentiments(df, sentiment_term), sentiment_term)
+        
+        print('update_hist here 3', related_sentiments(df, sentiment_term), sentiment_term)
         init_length = len(df)
-        df['sentiment_smoothed'] = df['sentiment'].rolling(int(len(df) / 5)).mean()
+        df['sentiment_smoothed'] = df['sentiment'].rolling(int(len(df)/5)).mean()
         df.dropna(inplace=True)
         df = df_resample_sizes(df, maxlen=500)
         X = df.index
         Y = df.sentiment_smoothed.values
         Y2 = df.volume.values
-
-        data = plotly.graph_objs.Scatter(
+        
+        dataX = plotly.graph_objs.Scatter(
                 x = X,
                 y = Y,
                 name = 'Sentiment',
@@ -394,31 +393,33 @@ def update_hist_graph_scatter(sentiment_term, n):
 
                 )
 
-        data2 = plotly.graph_objs.Bar(
+        dataY = plotly.graph_objs.Bar(
                 x = X,
                 y = Y2,
                 name = 'Volume',
                 marker = dict(color=app_colors['volume-bar']),
                 )
-        print(data)
+        # print('data1', dataX)
+        # print('datae', dataY)
 
         df['sentiment_shares'] = list(map(pos_neg_neutral, df['sentiment']))
-        
-        #sentiment_shares = dict(df['sentiment_shares'].values_counts())
+        # print('number 2', df['sentiment_shares'])
+        sentiment_shares = dict(df['sentiment_shares'].value_counts())
+        # print('sentiment shares here 3', sentiment_shares)
         cache.set('sentiment_shares', sentiment_term, dict(df['sentiment_shares'].value_counts()), 120)
 
-        return {'data': [data, data2], 'layour' : go.Layout(xaxis=dict(range[min(X), max(X)]),
-                                                            yaxis=dict(range[min(Y2), max(Y2*4)], title='Volume', side='right'),
+        return {'data': [dataX, dataY], 'layout' : go.Layout(xaxis=dict(range=[min(X), max(X)]),
+                                                            yaxis=dict(range=[min(Y2), max(Y2*4)], title='Volume', side='right'),
                                                             yaxis2=dict(range=[min(Y), max(Y)], side='left', overlaying='y', title='sentiment'),
                                                             title='Longer-term sentiment for: "{}"'.format(sentiment_term),
                                                             font={'color': app_colors['text']},
                                                             plot_bgcolor = app_colors['background'],
                                                             paper_bgcolor = app_colors['background'],
                                                             showlegend = False)}
-        print(data)
+        # print('here 3', data, data2)
 
     except Exception as e:
-        with open('errors.txt', 'a') as f:
+        with open('errors_hist_graph.txt', 'a') as f:
             f.write(str(e))
             f.write('\n')
 
@@ -433,15 +434,16 @@ def generate_size(value, smin, smax):
 
 @app.callback(Output('related-sentiment', 'children'),
             [Input(component_id='sentiment_term', component_property='value'),
-            Input('related-update', 'interval')]
+            Input('related-update', 'n_intervals')]
             )
 
-def update_related_terms(sentiment_term):
+def update_related_terms(sentiment_term, n):
     try:
         # get data from cache
 
         for i in range(100):
             related_terms = cache.get('related_terms', sentiment_term) # term: {mean sentiment, count}
+            print(related_terms)
             if related_terms:
                 break
             time.sleep(0.1)
@@ -471,7 +473,7 @@ def update_related_terms(sentiment_term):
         return buttons
 
     except Exception as e:
-        with open('error.txt', 'a') as f:
+        with open('error_update_related.txt', 'a') as f:
             f.write(str(e))
             f.write('\n')
 
@@ -482,10 +484,10 @@ def update_related_terms(sentiment_term):
 
 @app.callback(Output('recent-trending', 'children'),
             [Input(component_id='sentiment_term', component_property='value'),
-            Input('related-update', 'interval')]
+            Input('related-update', 'n_intervals')]
             )
 
-def update_recent_trending(sentiment_term):
+def update_recent_trending(sentiment_term, n):
     try:
         query = """
                 SELECT
@@ -500,9 +502,9 @@ def update_recent_trending(sentiment_term):
         c = conn.cursor()
 
         result = c.execute(query).fetchone()
-
+        # print(result)
         related_terms = pickle.loads(result[0])
-        
+        # print('related_terms', related_terms)
 
         sizes = [related_terms[term][1] for term in related_terms]
         smin = min(sizes)
@@ -512,11 +514,11 @@ def update_recent_trending(sentiment_term):
                             'margin-right': '15px',
                             'margin-top': '15px',
                             'font-size': '{}%'.format(generate_size(related_terms[term][1], smin, smax))}) for term in related_terms]
-
+        
         return buttons
 
     except Exception as e:
-        with open('errors.txt', 'a') as f:
+        with open('errors_recent_trending.txt', 'a') as f:
             f.write(str(e))
             f.write('\n')
 
