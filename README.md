@@ -37,3 +37,5 @@ Twitter tweets provide a great source of user information that can be mined and 
 ## Screenshot for Dashboard
 
 <img src="https://github.com/ktung1189/Sentiment_Analysis_With_Dash/blob/master/tweet_graph.png" alt='Live_Twitter_Dashboard'>
+
+<img src="https://github.com/ktung1189/Sentiment_Analysis_With_Dash/blob/master/tweet_pie.png" alt='Live_Twitter_Dashboard'>
