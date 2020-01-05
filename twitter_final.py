@@ -14,6 +14,7 @@ import time
 from threading import Lock, Timer
 import pandas as pd 
 from config import stop_words
+from config1 import ckey, csecret, atoken, asecret
 import regex as re 
 from collections import Counter
 import string
@@ -23,16 +24,16 @@ from textblob import TextBlob
 import nltk
 nltk.download('punkt')
 nltk.download('averaged_perceptron_tagger')
-from googletrans import Translator
+# from googletrans import Translator
 
-translator = Translator()
+# translator = Translator()
 analyzer = SentimentIntensityAnalyzer()
 
 #consumer key, consumer secret, access token, access secret.
-ckey="H0RsCwOrI48FoLFC7MIAPPYEv"
-csecret="HHXTdbjICvn1pPZd49ai1QeorIpXadSNqSrNil5O649WownkHB"
-atoken="1190435213366579201-VGD6t1rRiSGQf3Z0IjXoGhkF6CS1mt"
-asecret="51dI53MfrvQtpchRiBvkIib7FWEwLA0q97M74JiLIE6Oc"
+ckey=ckey
+csecret=csecret
+atoken=atoken
+asecret=asecret
 
 conn = sqlite3.connect('twitter3.db', isolation_level=None, check_same_thread=False)
 
